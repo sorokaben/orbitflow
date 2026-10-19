@@ -82,4 +82,4 @@ class Topology():
     def print_links(self):
         for row in self.grid:
             for node in row:
-                print(f"{node} - Links: {node.links}")
+                print(f"{node} Links: {node.links}")

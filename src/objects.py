@@ -18,9 +18,11 @@ class Node:
         self.links = set()
 
     def __str__(self):
+        # Allows you to print() the node
         return (f"Node {self.id}")
 
     def __repr__(self):
+        # Allows you to print() the node inside of a list or call (Like print([node1, node2]))
         return (f"Node {self.id}")
     
     def add_packet(self, packet):
@@ -34,7 +36,7 @@ class Node:
 
     def extract_packet(self):
         if self.buffer:
-            # Remove oldest item from the front and return it
+            # Remove oldest packet from the front and return it
             return self.buffer.popleft()
 
         return None
@@ -46,19 +48,50 @@ class Node:
                 return link
 
 class Packet:
+    '''
+    Data structure for network packets
+
+    Attributes:
+        id (int or str): A unique identifier for the packet tracking.
+        size (in bits)
+        state: 0 (Stationary) 1 (In transit)
+    '''
     def __init__(self, id, size):
         self.id = id
         self.size = size
+        self.state = 0 # Stationary by default
+        self.source = None
+        self.destination = None
+        self.location = None
+
+    def __str__(self):
+        state_str = "stationary" if self.state == 0 else f"moving from {self.source} to {self.destination}"
+        return f"Packet {self.id} : {self.size} bits, state: {state_str}"
+
+    def move_packet(self, src, dest):
+        self.source = src
+        self.destination = dest
+        self.state = 1
+        
 
 class Link:
+    '''
+    Data structure for a link between two satellites
+
+    Attributes:
+        sat1: First satellite in the link
+        sat2: Second satellite in the link 
+    '''
     def __init__(self, sat1, sat2):
         self.sat1 = sat1
         self.sat2 = sat2
 
     def __str__(self):
-        return f"{self.sat1} - {self.sat2}"
+        # Allows you to print() the link
+        return f"{self.sat1} <--> {self.sat2}"
 
-    def __repr__(self): # like __str__ but for use inside lists and stuff
+    def __repr__(self): 
+        # Allows you to print() the link inside of a list or call (Like print([link1, link2]))
         return self.__str__()
 
     def get_partner(self, sat):
