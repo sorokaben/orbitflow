@@ -47,6 +47,11 @@ class Node:
             if link.get_partner(self) == partner:
                 return link
 
+    def downlink():
+        # This should only be used by satellites connected to a ground station!
+        # Note: Implement functionality for 10 Mbps downlink rate using simpy Environment processes
+        pass
+
 class Packet:
     '''
     Data structure for network packets
@@ -100,5 +105,7 @@ class Link:
             return self.sat2
         if sat == self.sat2:
             return self.sat1
+
+
 
     

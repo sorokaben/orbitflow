@@ -45,7 +45,6 @@ class Topology():
     def link_nodes(self):
         # Creates link objects between each node, including wrap-around behavior
 
-        # First create the links:
         link_set = set()
         count = 0
         for y in range(6):
@@ -71,7 +70,7 @@ class Topology():
                 for link in links:
                     forward_pair = (link.sat1, link.sat2)
                     reverse_pair = (link.sat2, link.sat1)
-                    if forward_pair not in link_set and reverse_pair not in link_set: 
+                    if forward_pair not in link_set and reverse_pair not in link_set: # Dont want duplicate "flipped" links
                         #Only create 1 link per connection, but ensure both nodes have that link inside them!
                         link.sat1.links.add(link)
                         link.sat2.links.add(link)
