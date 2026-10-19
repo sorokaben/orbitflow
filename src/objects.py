@@ -15,8 +15,14 @@ class Node:
         self.pos_y = pos_y
         self.max_buffer_size = max_buffer_size
         self.buffer = deque() # Double-ended FIFO queue
-        self.links = []
+        self.links = set()
 
+    def __str__(self):
+        return (f"Node {self.id}")
+
+    def __repr__(self):
+        return (f"Node {self.id}")
+    
     def add_packet(self, packet):
         # Add new packet to the end of the queue
         # Prevents overflowing buffers
@@ -33,6 +39,12 @@ class Node:
 
         return None
 
+    def get_partner_link(self, partner):
+        # Given a node and its partner, returns the link
+        for link in self.links:
+            if link.get_partner(self) == partner:
+                return link
+
 class Packet:
     def __init__(self, id, size):
         self.id = id
@@ -43,7 +55,14 @@ class Link:
         self.sat1 = sat1
         self.sat2 = sat2
 
+    def __str__(self):
+        return f"{self.sat1} - {self.sat2}"
+
+    def __repr__(self): # like __str__ but for use inside lists and stuff
+        return self.__str__()
+
     def get_partner(self, sat):
+        # Returns the link partner for a given link between a given satellite and its link partner
         if sat == self.sat1:
             return self.sat2
         if sat == self.sat2:
