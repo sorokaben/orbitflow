@@ -26,14 +26,15 @@ From the orbitflow directory, run:
 
 ``` powershell
 python -m venv .venv # Creates a folder named .venv
-# DO NOT commit this file to GitHub
 # Ensure .gitignore contains: 
 .venv/
 ```
 
 ## 3. Activate Virtual Environment
 ``` powershell
-.venv\Scripts\Activate.ps1 
+.venv\Scripts\Activate.ps1 #If on powershell
+.venv\Scripts\activate.bat #If on command prompt
+
 # Rerun this command every time you return to the project
 ```
 ## 4. Install Project Dependencies
