@@ -54,5 +54,6 @@ pip freeze > requirements.txt # Updates for everyone
 ## 6. Deactivate Virtual Environment
 
 ``` powershell
+#Only deactive when done with the development session
 deactivate
 ```

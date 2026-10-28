@@ -61,13 +61,16 @@ class Packet:
         size (in bits)
         state: 0 (Stationary) 1 (In transit)
     '''
-    def __init__(self, id, size):
+    def __init__(self, id, source, destination, creation_time, size=512):
         self.id = id
         self.size = size
         self.state = 0 # Stationary by default
-        self.source = None
-        self.destination = None
+        self.source = source
+        self.destination = destination
         self.location = None
+        self.creation_time = creation_time
+        self.arrival_time = None
+        self.forwarding_count = 0
 
     def __str__(self):
         state_str = "stationary" if self.state == 0 else f"moving from {self.source} to {self.destination}"
@@ -76,6 +79,7 @@ class Packet:
     def move_packet(self, src, dest):
         self.source = src
         self.destination = dest
+        self.forwarding_count += 1
         self.state = 1
         
 
