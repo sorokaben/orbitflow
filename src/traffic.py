@@ -24,6 +24,7 @@ def generate_cbr(rate_mbps, env, source, destination, buffer):
 
         packet_id += 1
         packet = Packet(packet_id, source, destination, env.now)
+        packet.location = source
         #print("Created packet: ", packet, " at time ", env.now)
         yield buffer.put(packet) 
  

@@ -3,14 +3,23 @@ from src.objects import *
 from src.topology import *
 from src.traffic import *
 from src.simulation import *
+from src.algorithms.dhbp import get_next_dhbp_hop
+from src.algorithms.ospf import get_next_ospf_hop
+
+
 import simpy
 
-def travel(env, packet_id, delay):
-    print(f"{env.now:.3f}: Packet {packet_id} starts")
+def transfer_packet(env, packet: Packet, delay, destination):
+
+    print(f"{env.now:.3f}: Packet {packet.id} starts")
+
+    packet.move_packet(packet.location, destination)
 
     yield env.timeout(delay)
 
-    print(f"{env.now:.3f}: Packet {packet_id} arrives")
+    packet.state = 0 # Means the packet isn't moving
+
+    print(f"{env.now:.3f}: Packet {packet.id} arrives")
 
 def simulation(rate_mbps):
     env = simpy.Environment() # This is what starts our simulated clock
@@ -24,64 +33,44 @@ def simulation(rate_mbps):
     pair2_source = topology.nodes[6]
     pair2_dest = topology.nodes[21] # Furthest from node 6 because we account for wrap-around
 
+
+    # TODO FOR DANIEL: Have your Dijkstra's build a routing table first so that your other function can refer to it!
+
     print("Time to generate...")
-    env.process(generate_cbr(rate_mbps,env,pair1_source, pair1_dest, packet_buffer))
+    env.process(generate_cbr(rate_mbps,env,pair1_source, pair1_dest, packet_buffer)) 
     env.process(generate_cbr(rate_mbps,env,pair2_source, pair2_dest, packet_buffer))
 
-    env.process(packet_transmitter(env, packet_buffer, bandwidth_bps=10_000_000)) # 10 Mbps is the paper's specified bandwidth
+    env.process(packet_transmitter(env, packet_buffer, topology, bandwidth_bps=10_000_000, routing_mode="dhbp")) # 10 Mbps is the paper's specified bandwidth
     env.run(until=100.0) # 
 
-def packet_transmitter(env, buffer, bandwidth_bps):
+def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="dhbp"):
   '''
   This runs simultaneuously along the rest of the program
   '''
   while True: # Infinite loop that is cut off when env.run's until reaches 100
 
-    # 1. Wait here until ANY packet shows up in the shared buffer
-    packet = yield buffer.get()
+    # Wait here until ANY packet shows up in the shared buffer
+    packet: Packet = yield buffer.get()
 
-    print(
-        f"[{env.now:.3f}] Transmitting Packet {packet.id} from"
-        f" {packet.source} to {packet.destination}"
-    )
+    # 3. Handle routing 
 
-    # 2. Calculate Transmission Delay (Serialization delay based on size)
-    # Assuming PACKET_SIZE is in bytes
+
+    # Calculate Transmission Delay
     packet_size_bits = 512 * 8
     transmission_time = packet_size_bits / bandwidth_bps
-    yield env.timeout(transmission_time)
+    yield env.timeout(transmission_time) # Wait this amount of time then return to this function
 
-    # 3. Handle routing / space propagation delay
-    # (You can check packet.destination here to calculate distance/delay!)
-    propagation_delay = 0.020  # e.g., 20ms satellite hop
-    yield env.timeout(propagation_delay)
+    propagation_delay = 0.00658 + transmission_time
+    print(propagation_delay)
 
-    print(f"[{env.now:.3f}] Packet {packet.id} successfully delivered!")
+    if routing_mode == "dhbp":
+        next_hop = get_next_dhbp_hop(packet, packet.location, topology)
+    elif routing_mode == "ospf":
+        next_hop = get_next_ospf_hop(packet, packet.location, topology)
 
-
-    ''' All tests
-    print(t)
-        #env.process(travel(env, "A", 0.007))
-        
-    
-        topology = Topology()
-    
-        # This is how, given a specific node, you can get the Link object to its partner:
-        node1 = topology.grid[0][0]
-        node7 = topology.grid[1][0]
-        print(topology)
-    
-        # Another way to get a specific node
-        node6 = (topology.nodes[6])
-        print(node6, "type: ", type(node6))
-    
-        topology.print_links()
-    
-        # Example
-        p = Packet(1, 20, 20)
-        print(p)
-        p.move_packet(node1, node7)
-        print(p)
-    
-    '''
-    
+    if packet.location == packet.destination:
+       print("f{env.now:.3f} Packet {packet.id} reached final destination {packet.destination}!")
+    else:
+        #print(f"[{env.now:.3f}] Packet {packet.id} forwarded to neighbor {next_hop}")
+        #env.process(transfer_packet(env, packet, propagation_delay, next_hop))
+        pass
