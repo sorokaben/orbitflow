@@ -3,8 +3,8 @@ from src.objects import *
 from src.topology import *
 from src.traffic import *
 from src.simulation import *
-from src.algorithms.dhbp import get_next_dhbp_hop
-from src.algorithms.ospf import get_next_ospf_hop
+from src.dhbp import get_next_dhbp_hop
+from src.ospf import get_next_ospf_hop
 
 
 import simpy
