@@ -57,7 +57,7 @@ def dijkstra(topology, starting_node):
                 # In theory, the routing table should have the index for the next hop,
                 # if that hop is not a neighbor node, then it will take the value in that element
                 # and index again, this will continue until we get a neighbor node that we can hop to
-                routing_table[i.id] = node.id
+                routing_table[i.id] = node
 
                 heapq.heappush(next_check, (new_cost, i))
 
@@ -79,12 +79,12 @@ def get_next_ospf_hop(packet, packet_location, topology):
     found_next_hop = False
     source_neighbors = find_neighbors(topology, source)
 
+    candidate = routing_table[destination.id]
     while not found_next_hop:
-        candidate = routing_table[destination.id]
 
         if candidate in source_neighbors:
-            return candidate
+            found_next_hop = True
         else:
-            source_neighbors = find_neighbors(topology, source)
+            candidate = routing_table[candidate]
 
-    pass
+    return candidate
