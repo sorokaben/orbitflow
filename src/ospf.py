@@ -72,4 +72,19 @@ def build_routing_table(topology):
 
 def get_next_ospf_hop(packet, packet_location, topology):
     # Returns next hop (a Node object)
+    routing_table = dijkstra(topology, packet.source)
+
+    source = packet.source
+    destination = packet.destination
+    found_next_hop = False
+    source_neighbors = find_neighbors(topology, source)
+
+    while not found_next_hop:
+        candidate = routing_table[destination.id]
+
+        if candidate in source_neighbors:
+            return candidate
+        else:
+            source_neighbors = find_neighbors(topology, source)
+
     pass
