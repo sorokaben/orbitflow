@@ -5,13 +5,13 @@ from src.traffic import *
 from src.simulation import *
 from src.dhbp import get_next_dhbp_hop
 from src.ospf import get_next_ospf_hop
-
+import traceback
 
 import simpy
 
 def transfer_packet(env, packet: Packet, delay, destination):
 
-    print(f"{env.now:.3f}: Packet {packet.id} starts")
+    #print(f"{env.now:.3f}: Packet {packet.id} starts")
 
     packet.move_packet(packet.location, destination)
 
@@ -19,7 +19,7 @@ def transfer_packet(env, packet: Packet, delay, destination):
 
     packet.state = 0 # Means the packet isn't moving
 
-    print(f"{env.now:.3f}: Packet {packet.id} arrives")
+    #print(f"{env.now:.3f}: Packet {packet.id} arrives")
 
 def simulation(rate_mbps):
     env = simpy.Environment() # This is what starts our simulated clock
@@ -27,11 +27,12 @@ def simulation(rate_mbps):
     print("Simulating")
 
     topology = Topology()
-    pair1_source = topology.nodes[1]
-    pair1_dest = topology.nodes[22] # Furthest from node 1 because we account for wrap-around
+    print(topology.nodes[0])
+    pair1_source = topology.nodes[0]
+    pair1_dest = topology.nodes[21] # Furthest from node 1 because we account for wrap-around
 
-    pair2_source = topology.nodes[6]
-    pair2_dest = topology.nodes[21] # Furthest from node 6 because we account for wrap-around
+    pair2_source = topology.nodes[5]
+    pair2_dest = topology.nodes[20] # Furthest from node 6 because we account for wrap-around
 
 
     # TODO FOR DANIEL: Have your Dijkstra's build a routing table first so that your other function can refer to it!
@@ -39,11 +40,20 @@ def simulation(rate_mbps):
     print("Time to generate...")
     env.process(generate_cbr(rate_mbps,env,pair1_source, pair1_dest, packet_buffer)) 
     env.process(generate_cbr(rate_mbps,env,pair2_source, pair2_dest, packet_buffer))
+    # 10 Mbps is the paper's specified bandwidth    
+    env.process(packet_transmitter(env, packet_buffer, topology, bandwidth_bps=10_000_000, routing_mode="ospf"))
+    try:  
+        env.run(until=100.0) # 
+    except Exception as e:
+        print("\n" + "="*50)
+        print("FOUND THE HIDDEN CRASH DETAILS:")
+        print("="*50)
+        # This extracts the actual background generator crash details
+        traceback.print_exception(type(e), e, e.__traceback__)
+        print("="*50 + "\n")
+        raise e
 
-    env.process(packet_transmitter(env, packet_buffer, topology, bandwidth_bps=10_000_000, routing_mode="dhbp")) # 10 Mbps is the paper's specified bandwidth
-    env.run(until=100.0) # 
-
-def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="dhbp"):
+def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="ospf"):
   '''
   This runs simultaneuously along the rest of the program
   '''
@@ -61,7 +71,6 @@ def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="dhbp"
     yield env.timeout(transmission_time) # Wait this amount of time then return to this function
 
     propagation_delay = 0.00658 + transmission_time
-    print(propagation_delay)
 
     if routing_mode == "dhbp":
         next_hop = get_next_dhbp_hop(packet, packet.location, topology)
@@ -69,8 +78,8 @@ def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="dhbp"
         next_hop = get_next_ospf_hop(packet, packet.location, topology)
 
     if packet.location == packet.destination:
-       print("f{env.now:.3f} Packet {packet.id} reached final destination {packet.destination}!")
+        print("f{env.now:.3f} Packet {packet.id} reached final destination {packet.destination}!")
     else:
-        #print(f"[{env.now:.3f}] Packet {packet.id} forwarded to neighbor {next_hop}")
-        #env.process(transfer_packet(env, packet, propagation_delay, next_hop))
-        pass
+        print(f"[{env.now:.3f}] Packet {packet.id} forwarded to neighbor {next_hop} from {packet.location}")
+        env.process(transfer_packet(env, packet, propagation_delay, next_hop))
+        

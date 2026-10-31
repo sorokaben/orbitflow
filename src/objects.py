@@ -25,6 +25,10 @@ class Node:
         # Allows you to print() the node inside of a list or call (Like print([node1, node2]))
         return (f"Node {self.id}")
     
+    def __lt__(self, other): 
+        # When there is a tie between nodes, just pick the second
+        return other
+    
     def add_packet(self, packet):
         # Add new packet to the end of the queue
         # Prevents overflowing buffers

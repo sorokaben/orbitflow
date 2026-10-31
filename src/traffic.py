@@ -19,6 +19,7 @@ def generate_cbr(rate_mbps, env, source, destination, buffer):
     print("Beginning cbr generation from ", source, " to ", destination)
     interval = cbr_interval(rate_mbps)
     packet_id = 0
+    packets_sent = 0
     while True: #Continues until main program stops environment
         yield env.timeout(interval)
 
@@ -27,4 +28,9 @@ def generate_cbr(rate_mbps, env, source, destination, buffer):
         packet.location = source
         #print("Created packet: ", packet, " at time ", env.now)
         yield buffer.put(packet) 
+        
+        packets_sent += 1
+        if packets_sent > 1:
+            return
+        
  

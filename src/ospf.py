@@ -2,9 +2,7 @@
 from src.topology import *
 from src.objects import *
 import heapq
-# I added some recommended architecture to make it mesh nicely with my part,
-# but feel free to change things as needed.
-
+import time
 def find_neighbors(topology, starting_node):
     up = (starting_node.pos_y - 1) if starting_node.pos_y > 0 else 5
     down = (starting_node.pos_y + 1) if starting_node.pos_y < 5 else 0
@@ -25,12 +23,18 @@ def dijkstra(topology, starting_node):
     # -> take lowest cost again -> repeat
 
     # Tracks the best next hop depending on destination, index i corresponds to node i
-    routing_table = [starting_node.id] * topology.nodes
+    routing_table = []
+    topology_size = len(topology.nodes)
+    for i in range(topology_size):
+        routing_table.append(starting_node)
 
-    distance = [float('inf')] * topology.nodes
+    distance = []
+    for i in range(topology_size):
+            distance.append(float('inf'))
     distance[starting_node.id] = 0
 
     visited = set()
+    visited.add(starting_node.id)
     next_check = []
     neighbors = []
 
@@ -41,8 +45,8 @@ def dijkstra(topology, starting_node):
 
         if cost > distance[node.id]:
             continue
-        if node.id in visited:
-            continue
+        # if node.id in visited:
+        #     continue
 
         distance[node.id] = cost
         neighbors = find_neighbors(topology, node)
@@ -50,19 +54,27 @@ def dijkstra(topology, starting_node):
         # We assume every link is of cost 1, we consider num of hops to be the only cost
         new_cost = cost + 1
         for i in neighbors:
-
-            if distance[i.id] > new_cost:
+            
+            if distance[i.id] > new_cost and (i.id not in visited):
+                # print("visited: ", visited)
+                # print("i.id: ", i.id)
                 distance[i.id] = new_cost
-
                 # In theory, the routing table should have the index for the next hop,
                 # if that hop is not a neighbor node, then it will take the value in that element
                 # and index again, this will continue until we get a neighbor node that we can hop to
-                routing_table[i.id] = node
+                if node == starting_node:
+                    routing_table[i.id] = i
+                else:
+                    routing_table[i.id] = node
+
 
                 heapq.heappush(next_check, (new_cost, i))
 
         visited.add(node.id)
-
+    # print("ROUTING TABLE FOR: ", starting_node, " with a length of: ", len(routing_table))
+    # print(routing_table)
+    # print("DISTANCE TABLE FOR: ", starting_node, " with a length of: ", len(distance))
+    # print(distance)
     return routing_table
 
 def build_routing_table(topology):
@@ -85,6 +97,6 @@ def get_next_ospf_hop(packet, packet_location, topology):
         if candidate in source_neighbors:
             found_next_hop = True
         else:
-            candidate = routing_table[candidate]
+            candidate = routing_table[candidate.id]
 
     return candidate

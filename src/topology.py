@@ -28,17 +28,19 @@ class Topology():
         print("Creating topology: ")
         for y in range(6):
             for x in range(6):
-                count += 1
                 node = Node(count, x, y, self.max_buffer_size)
                 node.id = count
                 node.pos_x = x
                 node.pos_y = y
                 self.nodes[count] = node
+
                 self.grid[y][x] = node
 
                 # Print out topology
                 gap = "  " if count < 10 else " "
                 print(f"[{self.nodes[count]}]", end=gap)
+                count += 1
+
 
             print()
 
