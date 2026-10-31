@@ -28,9 +28,10 @@ def generate_cbr(rate_mbps, env, source, destination, buffer):
         packet.location = source
         #print("Created packet: ", packet, " at time ", env.now)
         yield buffer.put(packet) 
-        
-        # packets_sent += 1
-        # if packets_sent > 0:
-        #     return
+
+        # TODO: COMMENT THIS NEXT BIT OUT
+        packets_sent += 1
+        if packets_sent > 0:
+           return
         
  

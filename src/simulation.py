@@ -17,7 +17,7 @@ def transfer_packet(env, packet: Packet, delay, destination):
 
     yield env.timeout(delay)
 
-    packet.move_packet(packet.location, destination)
+    packet.move_packet(destination)
 
 
     packet.state = 0 # Means the packet isn't moving
