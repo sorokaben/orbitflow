@@ -18,6 +18,7 @@ def find_neighbors(topology, starting_node):
     return neighbors
 
 def dijkstra(topology, starting_node):
+    print("Starting dijkstra on: ", starting_node)
     # Calculate shortest paths from starting node
     # Dijkstra -> least-costs -> source node -> look at neighbors -> take lowest cost -> look at that node's neighbors, add to set
     # -> take lowest cost again -> repeat
@@ -45,8 +46,8 @@ def dijkstra(topology, starting_node):
 
         if cost > distance[node.id]:
             continue
-        # if node.id in visited:
-        #     continue
+        #if node.id in visited:
+            #continue
 
         distance[node.id] = cost
         neighbors = find_neighbors(topology, node)
@@ -55,7 +56,7 @@ def dijkstra(topology, starting_node):
         new_cost = cost + 1
         for i in neighbors:
             
-            if distance[i.id] > new_cost and (i.id not in visited):
+            if distance[i.id] > new_cost:
                 # print("visited: ", visited)
                 # print("i.id: ", i.id)
                 distance[i.id] = new_cost
@@ -75,7 +76,7 @@ def dijkstra(topology, starting_node):
     # print(routing_table)
     # print("DISTANCE TABLE FOR: ", starting_node, " with a length of: ", len(distance))
     # print(distance)
-    return routing_table
+    return routing_table, distance
 
 def build_routing_table(topology):
     # Call Dijkstra() to build and return a routing table
@@ -84,12 +85,12 @@ def build_routing_table(topology):
 
 def get_next_ospf_hop(packet, packet_location, topology):
     # Returns next hop (a Node object)
-    routing_table = dijkstra(topology, packet.source)
+    routing_table, distance = dijkstra(topology, packet_location)
 
     source = packet.source
     destination = packet.destination
     found_next_hop = False
-    source_neighbors = find_neighbors(topology, source)
+    source_neighbors = find_neighbors(topology, packet_location)
 
     candidate = routing_table[destination.id]
     while not found_next_hop:
@@ -97,6 +98,13 @@ def get_next_ospf_hop(packet, packet_location, topology):
         if candidate in source_neighbors:
             found_next_hop = True
         else:
+            if candidate.id == packet_location.id or routing_table[candidate.id] == candidate:
+                return candidate
             candidate = routing_table[candidate.id]
-
+    print()
+    print()
+    print("routing: ", routing_table)
+    print("distance: ", distance)
     return candidate
+
+ 

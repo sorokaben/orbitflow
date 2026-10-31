@@ -3,7 +3,7 @@ from src.objects import Packet
 
 
 PACKET_SIZE = 512
-
+packet_id = 0
 def bursty():
     
     pass
@@ -18,7 +18,7 @@ def cbr_interval(rate_mbps):
 def generate_cbr(rate_mbps, env, source, destination, buffer):
     print("Beginning cbr generation from ", source, " to ", destination)
     interval = cbr_interval(rate_mbps)
-    packet_id = 0
+    global packet_id
     packets_sent = 0
     while True: #Continues until main program stops environment
         yield env.timeout(interval)
@@ -30,7 +30,7 @@ def generate_cbr(rate_mbps, env, source, destination, buffer):
         yield buffer.put(packet) 
         
         packets_sent += 1
-        if packets_sent > 1:
+        if packets_sent > 0:
             return
         
  

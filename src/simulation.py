@@ -13,9 +13,12 @@ def transfer_packet(env, packet: Packet, delay, destination):
 
     #print(f"{env.now:.3f}: Packet {packet.id} starts")
 
-    packet.move_packet(packet.location, destination)
+    packet.state = 1
 
     yield env.timeout(delay)
+
+    packet.move_packet(packet.location, destination)
+
 
     packet.state = 0 # Means the packet isn't moving
 
@@ -39,7 +42,7 @@ def simulation(rate_mbps):
 
     print("Time to generate...")
     env.process(generate_cbr(rate_mbps,env,pair1_source, pair1_dest, packet_buffer)) 
-    env.process(generate_cbr(rate_mbps,env,pair2_source, pair2_dest, packet_buffer))
+    #env.process(generate_cbr(rate_mbps,env,pair2_source, pair2_dest, packet_buffer)) TODO: UNCOMMENT THIS!!!!!
     # 10 Mbps is the paper's specified bandwidth    
     env.process(packet_transmitter(env, packet_buffer, topology, bandwidth_bps=10_000_000, routing_mode="ospf"))
     try:  
@@ -78,8 +81,11 @@ def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="ospf"
         next_hop = get_next_ospf_hop(packet, packet.location, topology)
 
     if packet.location == packet.destination:
-        print("f{env.now:.3f} Packet {packet.id} reached final destination {packet.destination}!")
+        print(f"[{env.now:.3f}] Packet {packet.id} reached final destination {packet.destination}!")
     else:
-        print(f"[{env.now:.3f}] Packet {packet.id} forwarded to neighbor {next_hop} from {packet.location}")
-        env.process(transfer_packet(env, packet, propagation_delay, next_hop))
+        print(f"[{env.now:.3f}] Packet {packet.id} (Dest: {packet.destination}) forwarded to neighbor {next_hop} from {packet.location}")
+
+        yield env.process(transfer_packet(env, packet, propagation_delay, next_hop))
+        yield buffer.put(packet)
+
         

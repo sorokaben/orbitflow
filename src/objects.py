@@ -16,6 +16,7 @@ class Node:
         self.max_buffer_size = max_buffer_size
         self.buffer = deque() # Double-ended FIFO queue
         self.links = set()
+        self.destination_cost = 0
 
     def __str__(self):
         # Allows you to print() the node
@@ -82,9 +83,9 @@ class Packet:
 
     def move_packet(self, src, dest):
         self.source = src
-        self.destination = dest
         self.forwarding_count += 1
         self.state = 1
+        self.location = dest
         
 
 class Link:
