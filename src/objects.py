@@ -81,8 +81,7 @@ class Packet:
         state_str = "stationary" if self.state == 0 else f"moving from {self.source} to {self.destination}"
         return f"Packet {self.id} : {self.size} bits, state: {state_str}"
 
-    def move_packet(self, src, dest):
-        self.source = src
+    def move_packet(self, dest):
         self.forwarding_count += 1
         self.state = 1
         self.location = dest
