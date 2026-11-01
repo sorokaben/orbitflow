@@ -12,6 +12,8 @@ class Topology():
         self.build_topology(env)
         self.link_nodes()
 
+        
+
     def __str__(self):
         count = 0
         string = f""

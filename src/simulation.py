@@ -19,14 +19,28 @@ def transfer_packet(env, packet: Packet, delay, next_hop):
 
     yield env.timeout(delay)
 
-    packet.move_packet(next_hop)
+    packet.location = next_hop
+
+    # Drop Packet if there's no room
+    if len(next_hop.buffer.items) < next_hop.buffer.capacity:
+        yield next_hop.buffer.put(packet)
+    else:
+        #print(f"[{env.now:.3}] DROP: Packet {packet.id}. Dropped at Node {next_hop.id}. Reason: Buffer Full")
+        env.metrics["packets_dropped_transit"] += 1
 
     packet.state = 0 # Means the packet isn't moving
 
-    yield next_hop.buffer.put(packet)
 
 def simulation(rate_mbps):
     env = simpy.Environment() # This is what starts our simulated clock
+    env.metrics = {
+        "packets_created": 0,
+        "packets_delivered": 0,
+        "packets_dropped_source": 0,
+        "packets_dropped_transit": 0,
+        "routing_failures": 0
+
+    }
     packet_buffer = simpy.Store(env)
     print("Simulating")
 
@@ -72,7 +86,11 @@ def simulation(rate_mbps):
     generate_traffic(traffic_type_choice, rate_mbps, env, pair2_source, pair2_dest) 
     
     try:  
-        env.run(until=100.0) # 
+        env.run(until=1) # TODO: CHANGE BACK TO 100
+
+        print(f"Total Created: {env.metrics['packets_created']}")
+        print(f"Total Delivered: {env.metrics['packets_delivered']}")
+        print(f"Total Dropped: {env.metrics['packets_dropped_transit'] + env.metrics['packets_dropped_source']}")
     except Exception as e:
         print("\n" + "="*50)
         print("FOUND THE HIDDEN CRASH DETAILS:")
@@ -92,9 +110,9 @@ def node_transmitter(env, node, topology, bandwidth_bps, routing_mode):
 
         # Check if it has reached final destination
         if packet.location == packet.destination:
-            #print(f"[{env.now:.3f}] Packet {packet.id} reached final destination {packet.destination}!")
+            env.metrics["packets_delivered"] += 1
+            #print(f"[{env.now:.3f}] Packet {packet.id} reached its destination of {packet.destination}")
             continue
-
         # Calculate Delays
         packet_size_bits = packet.size
         transmission_time = packet_size_bits / bandwidth_bps
@@ -105,42 +123,19 @@ def node_transmitter(env, node, topology, bandwidth_bps, routing_mode):
         # Route and forward
         next_hop = None
         if routing_mode == "dhbp":
-            next_hop = get_next_dhbp_hop(packet, packet.location, topology)
+            next_hop = get_next_dhbp_hop(packet, node, topology)
         elif routing_mode == "ospf":
-            next_hop = get_next_ospf_hop(packet, packet.location, topology)
+            next_hop = get_next_ospf_hop(packet, node, topology)
+
+        if next_hop is None:
+            print(f"[{env.now:.3}] DROP: Packet {packet.id}. Dropped at Node {node.id}. Reason: No Route To Destination")
+            env.metrics["routing_failures"] += 1
+            continue
+
 
         #print(f"[{env.now:.3f}] Packet {packet.id} forwarded from {node.id} to {next_hop.id}")
 
         env.process(transfer_packet(env, packet, propagation_delay, next_hop))
 
-# def packet_transmitter(env, buffer, topology, bandwidth_bps, routing_mode="ospf"):
-#   '''
-#   This runs simultaneuously along the rest of the program
-#   '''
-#   while True: # Infinite loop that is cut off when env.run's until reaches 100
-
-#     # Wait here until ANY packet shows up in the shared buffer
-#     packet: Packet = yield buffer.get()
-
-#     # 3. Handle routing 
-
-
-#     # Calculate Transmission Delay
-
-
-#     propagation_delay = 0.00658 + transmission_time
-
-#     if routing_mode == "dhbp":
-#         next_hop = get_next_dhbp_hop(packet, packet.location, topology)
-#     elif routing_mode == "ospf":
-#         next_hop = get_next_ospf_hop(packet, packet.location, topology)
-
-#     if packet.location == packet.destination:
-#         print(f"[{env.now:.3f}] Packet {packet.id} reached final destination {packet.destination}!")
-#     else:
-#         print(f"[{env.now:.3f}] Packet {packet.id} (Dest: {packet.destination}) forwarded to neighbor {next_hop} from {packet.location}")
-
-#         yield env.process(transfer_packet(env, packet, propagation_delay, next_hop))
-#         yield buffer.put(packet)
 
         

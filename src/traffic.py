@@ -5,6 +5,16 @@ import random
 PACKET_SIZE = 512
 packet_id = 0
 
+def inject_packet(env, packet, node):
+        if len(node.buffer.items) < node.buffer.capacity:
+            yield node.buffer.put(packet)
+            #print("Put packet")
+            env.metrics["packets_created"] += 1
+        else:
+            print(f"[{env.now:.3}] DROP: Packet {packet.id}. Dropped at Node {node.id}. Reason: Buffer Full")
+            env.metrics["packets_dropped_source"] += 1
+
+
 def generate_bursty(rate_mbps, env, source, destination):
     # Generates CBR ocassionally and bursty at other times, meaning more traffic
     state = "NORMAL"
@@ -33,8 +43,8 @@ def generate_bursty(rate_mbps, env, source, destination):
             packet_id += 1
             packet = Packet(packet_id, source, destination, env.now)
             packet.location = source 
-            print(f"[{env.now:.3f}] Packet {packet.id} created")
-            yield source.buffer.put(packet)
+            #print(f"[{env.now:.3f}] Packet {packet.id} created")
+            yield from inject_packet(env, packet, source)
 
         # Timer runs out: Swap state
         state = "BURSTY" if state == "NORMAL" else "NORMAL"
@@ -51,8 +61,9 @@ def generate_poisson(rate_mbps, env, source, destination):
         packet_id += 1
         packet = Packet(packet_id, source, destination, env.now)
         packet.location = source
-        print(f"[{env.now:.6f}] Packet {packet.id} created")
-        yield source.buffer.put(packet) 
+        #print(f"[{env.now:.6f}] Packet {packet.id} created")
+        yield from inject_packet(env, packet, source)
+
 
     
 
@@ -63,7 +74,6 @@ def cbr_interval(rate_mbps):
     return interval
 
 def generate_cbr(rate_mbps, env, source, destination):
-    print("Beginning cbr generation from ", source, " to ", destination)
     interval = cbr_interval(rate_mbps)
     global packet_id
     packets_sent = 0
@@ -72,8 +82,8 @@ def generate_cbr(rate_mbps, env, source, destination):
         packet_id += 1
         packet = Packet(packet_id, source, destination, env.now)
         packet.location = source
-        print(f"[{env.now:.3f}] Packet {packet.id} created")
-        yield source.buffer.put(packet) 
+        #print(f"[{env.now:.3f}] Packet {packet.id} created")
+        yield from inject_packet(env, packet, source)
 
         # TODO: COMMENT THIS NEXT BIT OUT
         # packets_sent += 1
