@@ -3,13 +3,13 @@
 from src.objects import *
 
 class Topology():
-    def __init__(self):
+    def __init__(self, env):
         self.nodes = {}
         self.grid = [[None for x in range(6)] for y in range(6)] # Create a 6x6 2d array
 
         self.max_buffer_size = 100 # Default 100. Change this to 50 when testing with CBR like the paper does.
 
-        self.build_topology()
+        self.build_topology(env)
         self.link_nodes()
 
     def __str__(self):
@@ -22,13 +22,13 @@ class Topology():
                 string += (f"[{self.nodes[count]}]{gap}")
             return string
 
-    def build_topology(self):
+    def build_topology(self, env):
         # Creates the 6x6 36-node topology
         count = 0
         print("Creating topology: ")
         for y in range(6):
             for x in range(6):
-                node = Node(count, x, y, self.max_buffer_size)
+                node = Node(count, x, y, self.max_buffer_size, env)
                 node.id = count
                 node.pos_x = x
                 node.pos_y = y

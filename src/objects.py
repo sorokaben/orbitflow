@@ -1,6 +1,6 @@
 # Define network objects and behavior
 
-from collections import deque # Used for more efficient FIFO pops than python's built-in pop()
+import simpy
 
 class Node:
     '''
@@ -9,12 +9,12 @@ class Node:
         Returns True on success and False on failure
     extract_packet() pops and returns the Packet
     '''
-    def __init__(self,id,pos_x,pos_y,max_buffer_size):
+    def __init__(self,id,pos_x,pos_y,max_buffer_size, env):
         self.id = id
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.max_buffer_size = max_buffer_size
-        self.buffer = deque() # Double-ended FIFO queue
+        self.buffer = simpy.Store(env, capacity=max_buffer_size)
         self.links = set()
         self.destination_cost = 0
 
@@ -29,22 +29,6 @@ class Node:
     def __lt__(self, other): 
         # When there is a tie between nodes, just pick the second
         return other
-    
-    def add_packet(self, packet):
-        # Add new packet to the end of the queue
-        # Prevents overflowing buffers
-        if len(self.buffer) < self.max_buffer_size:
-            self.buffer.append(packet)
-            return True #Success
-        else:
-            return False #Failure
-
-    def extract_packet(self):
-        if self.buffer:
-            # Remove oldest packet from the front and return it
-            return self.buffer.popleft()
-
-        return None
 
     def get_partner_link(self, partner):
         # Given a node and its partner, returns the link
@@ -81,10 +65,9 @@ class Packet:
         state_str = "stationary" if self.state == 0 else f"moving from {self.source} to {self.destination}"
         return f"Packet {self.id} : {self.size} bits, state: {state_str}"
 
-    def move_packet(self, dest):
+    def move_packet(self, next_hop):
         self.forwarding_count += 1
-        self.state = 1
-        self.location = dest
+        self.location = next_hop
         
 
 class Link:

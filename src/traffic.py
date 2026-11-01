@@ -15,19 +15,18 @@ def cbr_interval(rate_mbps):
     interval = packet_size_bytes / traffic_rate
     return interval
 
-def generate_cbr(rate_mbps, env, source, destination, buffer):
+def generate_cbr(rate_mbps, env, source, destination):
     print("Beginning cbr generation from ", source, " to ", destination)
     interval = cbr_interval(rate_mbps)
     global packet_id
     packets_sent = 0
     while True: #Continues until main program stops environment
         yield env.timeout(interval)
-
         packet_id += 1
         packet = Packet(packet_id, source, destination, env.now)
         packet.location = source
         #print("Created packet: ", packet, " at time ", env.now)
-        yield buffer.put(packet) 
+        yield source.buffer.put(packet) 
 
         # TODO: COMMENT THIS NEXT BIT OUT
         packets_sent += 1
