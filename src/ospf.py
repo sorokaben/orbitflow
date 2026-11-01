@@ -18,7 +18,7 @@ def find_neighbors(topology, starting_node):
     return neighbors
 
 def dijkstra(topology, starting_node):
-    print("Starting dijkstra on: ", starting_node)
+    #print("Starting dijkstra on: ", starting_node)
     # Calculate shortest paths from starting node
     # Dijkstra -> least-costs -> source node -> look at neighbors -> take lowest cost -> look at that node's neighbors, add to set
     # -> take lowest cost again -> repeat
@@ -101,10 +101,9 @@ def get_next_ospf_hop(packet, packet_location, topology):
             if candidate.id == packet_location.id or routing_table[candidate.id] == candidate:
                 return candidate
             candidate = routing_table[candidate.id]
-    print()
-    print()
-    print("routing: ", routing_table)
-    print("distance: ", distance)
+
+    #print("routing: ", routing_table)
+    #print("distance: ", distance)
     return candidate
 
  

@@ -49,14 +49,28 @@ def simulation(rate_mbps):
         else:
             print("Please enter a valid selection.")
 
+    traffic_type_choice = ""
+
+    while traffic_type_choice not in ["cbr", "poisson", "bursty"]:
+        traffic_type_input = (input("Welcome! Please choose an option: \n 1 : CBR \n 2 : Poisson \n 3 : BURSTY \n >>>"))
+        if traffic_type_input == "1" or traffic_type_input.lower() == "cbr":
+            traffic_type_choice = "cbr"
+        elif traffic_type_input == "2" or traffic_type_input.lower() == "poisson":
+            traffic_type_choice = "poisson"
+        elif traffic_type_input == "3" or traffic_type_input.lower() == "bursty":
+            traffic_type_choice = "bursty"
+        else:
+            print("Please enter a valid selection.")
+
 
     for node in topology.nodes.values():
         env.process(node_transmitter(env, node, topology, bandwidth_bps=BANDWIDTH_BPS, routing_mode=routing_mode_choice))
 
     print("Time to generate...")
-    env.process(generate_cbr(rate_mbps,env,pair1_source, pair1_dest)) 
-    #env.process(generate_cbr(rate_mbps,env,pair2_source, pair2_dest, packet_buffer)) TODO: UNCOMMENT THIS!!!!!
-    # 10 Mbps is the paper's specified bandwidth    
+    # No need for env process since generate_traffic does that based off the selected traffic type
+    generate_traffic(traffic_type_choice, rate_mbps, env, pair1_source, pair1_dest) 
+    generate_traffic(traffic_type_choice, rate_mbps, env, pair2_source, pair2_dest) 
+    
     try:  
         env.run(until=100.0) # 
     except Exception as e:
@@ -68,7 +82,7 @@ def simulation(rate_mbps):
         print("="*50 + "\n")
         raise e
 
-def node_transmitter(env, node, topology, bandwidth_bps, routing_mode="ospf"):
+def node_transmitter(env, node, topology, bandwidth_bps, routing_mode):
     '''
     Runs continuously for a specific node, pulling from its personal buffer
     '''
@@ -78,7 +92,7 @@ def node_transmitter(env, node, topology, bandwidth_bps, routing_mode="ospf"):
 
         # Check if it has reached final destination
         if packet.location == packet.destination:
-            print(f"[{env.now:.3f}] Packet {packet.id} reached final destination {packet.destination}!")
+            #print(f"[{env.now:.3f}] Packet {packet.id} reached final destination {packet.destination}!")
             continue
 
         # Calculate Delays
@@ -89,13 +103,13 @@ def node_transmitter(env, node, topology, bandwidth_bps, routing_mode="ospf"):
         propagation_delay = 0.00658 + transmission_time
 
         # Route and forward
-
+        next_hop = None
         if routing_mode == "dhbp":
             next_hop = get_next_dhbp_hop(packet, packet.location, topology)
         elif routing_mode == "ospf":
             next_hop = get_next_ospf_hop(packet, packet.location, topology)
 
-        print(f"[{env.now:.3f}] Packet {packet.id} forwarded from {node.id} to {next_hop.id}")
+        #print(f"[{env.now:.3f}] Packet {packet.id} forwarded from {node.id} to {next_hop.id}")
 
         env.process(transfer_packet(env, packet, propagation_delay, next_hop))
 

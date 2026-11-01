@@ -1,14 +1,61 @@
 # Generates all 3 types of traffic
 from src.objects import Packet
-
+import random
 
 PACKET_SIZE = 512
 packet_id = 0
-def bursty():
+
+def generate_bursty(rate_mbps, env, source, destination):
+    # Generates CBR ocassionally and bursty at other times, meaning more traffic
+    state = "NORMAL"
+    global packet_id
+
+
+    while True: #Continues until main program stops environment
+
+        # Set traffic rate based on current state
+        if state == "NORMAL":
+            current_rate = rate_mbps # Same as CBR
+        elif state == "BURSTY":
+            # Get a random float between 3 and 11. All numbers have equal probability
+            current_rate = random.uniform(3,11)
+
+        interval = cbr_interval(current_rate)
+
+        # How long to stay in the state; average of 1 second
+        state_duration = random.expovariate(1.0)
+        state_end_time = env.now + state_duration
+
+        # Generate packets until the state timer runs out
+
+        while env.now < state_end_time:
+            yield env.timeout(interval)
+            packet_id += 1
+            packet = Packet(packet_id, source, destination, env.now)
+            packet.location = source 
+            print(f"[{env.now:.3f}] Packet {packet.id} created")
+            yield source.buffer.put(packet)
+
+        # Timer runs out: Swap state
+        state = "BURSTY" if state == "NORMAL" else "NORMAL"
+
     
-    pass
-def poisson():
-    pass
+def generate_poisson(rate_mbps, env, source, destination):
+    # Like CBR, but packets arrive at random times
+    packets_per_second = (rate_mbps * 1_000_000) / (PACKET_SIZE * 8)
+    global packet_id
+
+    while True: #Continues until main program stops environment
+        interval = random.expovariate(packets_per_second)
+        yield env.timeout(interval)
+        packet_id += 1
+        packet = Packet(packet_id, source, destination, env.now)
+        packet.location = source
+        print(f"[{env.now:.6f}] Packet {packet.id} created")
+        yield source.buffer.put(packet) 
+
+    
+
 def cbr_interval(rate_mbps):  
     packet_size_bytes = PACKET_SIZE * 8
     traffic_rate = rate_mbps * 1000000 # Convert from Mbps to bps
@@ -25,12 +72,25 @@ def generate_cbr(rate_mbps, env, source, destination):
         packet_id += 1
         packet = Packet(packet_id, source, destination, env.now)
         packet.location = source
-        #print("Created packet: ", packet, " at time ", env.now)
+        print(f"[{env.now:.3f}] Packet {packet.id} created")
         yield source.buffer.put(packet) 
 
         # TODO: COMMENT THIS NEXT BIT OUT
-        packets_sent += 1
-        if packets_sent > 0:
-           return
-        
+        # packets_sent += 1
+        # if packets_sent > 0:
+        #    return
+
+def generate_traffic(traffic_type, rate_mbps, env, source, destination):
+    if traffic_type == "cbr":
+        print(f"Starting CBR traffic from {source.id} to {destination.id}")
+        env.process(generate_cbr(rate_mbps,env,source,destination))
+    elif traffic_type == "poisson":
+        print(f"Starting Poisson traffic from {source.id} to {destination.id}")
+        env.process(generate_poisson(rate_mbps,env,source,destination))
+    elif traffic_type == "bursty":
+        print(f"Starting Bursty traffic from {source.id} to {destination.id}")
+        env.process(generate_bursty(rate_mbps,env,source,destination))
+    else:
+        print("Error in traffic type")
+        quit()
  
