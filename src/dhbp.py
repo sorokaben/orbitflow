@@ -50,19 +50,60 @@ def build_hop_table(topology):
 
     return hop_table
 
+def is_in_region(packet, candidate):
+    source = packet.source
+    destination = packet.destination
+    x_valid = False
+    y_valid = False
 
-            
+    if source.pos_x <= candidate.pos_x and candidate.pos_x <= destination.pos_x:
+        x_valid = True
+
+    if source.pos_y <= candidate.pos_y and candidate.pos_y <= destination.pos_y:
+        y_valid = True
+
+    return x_valid and y_valid
+
+def construct_backlog(topology, node, hop_table):
+    topology_size = len(topology.nodes)
+    backlog = [[0 for _ in range(topology_size)] for _ in range(topology_size)]
+    backlog_sum = 0
+
+    for packet in node.buffer.items:
+        backlog[packet.location.id][packet.destination.id] += hop_table[packet.location.id][packet.destination.id]
+
+    return backlog
 
 
-
-
-
-def get_next_dhbp_hop(packet, packet_location, topology):
+def get_next_dhbp_hop(packet, packet_location, topology, hop_table):
     # Returns next hop (a Node object)
-    # TODO: This rudimentary_test is for testing only. Delete it when you actually implement this!
-    #print("Hi!")
-    #return(rudimentary_test(packet, packet_location, topology))
-    pass
+    topology_size = len(topology.nodes)
+
+    destination_hops_delay = hop_table[packet_location.id][packet.destination.id]
+    # ------------------------- Then we need to enqueue packet here ? ----------------------------
+
+    backlog = [[0 for _ in range(topology_size)] for _ in range(topology_size)]
+    backlog = construct_backlog(topology, packet_location, hop_table)
+    backlog[packet_location.id][packet.destination.id] += destination_hops_delay
+
+    # When packet is dequeued: we decide the next hop
+
+    neighbors = find_neighbors(topology, packet_location)
+    # Propagation will only be allowed within this region
+    omega = []
+    for n in neighbors:
+        if is_in_region(packet, n):
+            candidate_backlog = construct_backlog(topology, n, hop_table)
+            # Equation 15
+            omega.append((backlog[packet_location.id][packet.destination.id] - 
+                         candidate_backlog[n.id][packet.destination.id], n))
+     
+    # Not necessary, but including it for detail
+    backlog[packet_location.id][packet.destination.id] -= destination_hops_delay
+
+    candidate = max(omega)
+    print("Sending to node: ", candidate)
+    return candidate
 
 def rudimentary_test(packet, packet_location, topology: Topology):
     # random_link = random.choice(list(packet_location.links.get_partner()))
