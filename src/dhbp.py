@@ -90,9 +90,9 @@ def get_next_dhbp_hop(packet, packet_location, topology):
     backlog[packet_location.id][packet.destination.id] += destination_hops_delay
 
     # When packet is dequeued: we decide the next hop
-    print(hop_table[2][21])
-    print(hop_table[3][21])
-    print(hop_table[9][21])
+    # print(hop_table[2][21])
+    # print(hop_table[3][21])
+    # print(hop_table[9][21])
     #time.sleep(10000)
 
     neighbors = find_neighbors(topology, packet_location)
@@ -101,9 +101,9 @@ def get_next_dhbp_hop(packet, packet_location, topology):
     for n in neighbors:
         if is_in_region(packet, n):
             candidate_backlog = construct_backlog(topology, n, hop_table)
-           # print()
-           # print("candidate backlog:", candidate_backlog)
-           # print()
+           # # print()
+           # # print("candidate backlog:", candidate_backlog)
+           # # print()
             # Equation 15
             heapq.heappush(omega, (backlog[packet_location.id][packet.destination.id] - 
                          candidate_backlog[n.id][packet.destination.id], n))
@@ -111,24 +111,24 @@ def get_next_dhbp_hop(packet, packet_location, topology):
     # Not necessary, but including it for detail
     backlog[packet_location.id][packet.destination.id] -= destination_hops_delay
 
-    print(omega)
+    # print(omega)
     weight1, candidate1 = heapq.heappop(omega)
     weight2, candidate2 = heapq.heappop(omega)
     true_candidate = candidate2
-    print("Candidate1: ", candidate1)
-    print("Candidate2: ", candidate2)
+    # print("Candidate1: ", candidate1)
+    # print("Candidate2: ", candidate2)
 
 
-    print("Hops for each Candidate: ", hop_table[candidate1.id][packet.destination.id], hop_table[candidate2.id][packet.destination.id])
+    # print("Hops for each Candidate: ", hop_table[candidate1.id][packet.destination.id], hop_table[candidate2.id][packet.destination.id])
     if weight1 == weight2:
         if hop_table[candidate1.id][packet.destination.id] < hop_table[candidate2.id][packet.destination.id]:
             true_candidate = candidate1
         
 
-    print("Sending to node: ", true_candidate)
+    # print("Sending to node: ", true_candidate)
     return true_candidate
 
 def rudimentary_test(packet, packet_location, topology: Topology):
     # random_link = random.choice(list(packet_location.links.get_partner()))
-    #print("Hi test")
+    ## print("Hi test")
     pass

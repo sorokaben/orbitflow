@@ -47,10 +47,10 @@ def simulation(rate_mbps):
     topology = Topology(env)
     print(topology.nodes[0])
     pair1_source = topology.nodes[0]
-    pair1_dest = topology.nodes[21] # Furthest from node 1 because we account for wrap-around
+    pair1_dest = topology.nodes[21] # Furthest from node 0 because we account for wrap-around
 
-    pair2_source = topology.nodes[5]
-    pair2_dest = topology.nodes[20] # Furthest from node 6 because we account for wrap-around
+    pair2_source = topology.nodes[8]
+    pair2_dest = topology.nodes[29] # Furthest from node 8 because we account for wrap-around
 
     routing_mode_choice = ""
 
@@ -83,7 +83,7 @@ def simulation(rate_mbps):
     print("Time to generate...")
     # No need for env process since generate_traffic does that based off the selected traffic type
     generate_traffic(traffic_type_choice, rate_mbps, env, pair1_source, pair1_dest) 
-    generate_traffic(traffic_type_choice, rate_mbps, env, pair2_source, pair2_dest) 
+    #generate_traffic(traffic_type_choice, rate_mbps, env, pair2_source, pair2_dest) 
     
     try:  
         env.run(until=1) # TODO: CHANGE BACK TO 100

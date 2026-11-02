@@ -86,8 +86,8 @@ def generate_cbr(rate_mbps, env, source, destination):
         yield from inject_packet(env, packet, source)
 
         # TODO: COMMENT THIS NEXT BIT OUT
-        # packets_sent += 1
-        # if packets_sent > 0:
+        #packets_sent += 1
+        #if packets_sent > 0:
         #    return
 
 def generate_traffic(traffic_type, rate_mbps, env, source, destination):
