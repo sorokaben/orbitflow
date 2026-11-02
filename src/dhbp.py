@@ -56,18 +56,22 @@ def build_hop_table(topology):
     return hop_table
 
 def is_in_region(packet, candidate):
-    source = packet.source
-    destination = packet.destination
-    x_valid = False
-    y_valid = False
+    s_x, s_y = packet.source.pos_x, packet.source.pos_y
+    d_x, d_y = packet.destination.pos_x, packet.destination.pos_y
+    c_x, c_y = candidate.pos_x, candidate.pos_y
 
-    if source.pos_x <= candidate.pos_x and candidate.pos_x <= destination.pos_x:
-        x_valid = True
+    # Checks to see if the candidate is near an edge to allow for wraparound
+    def is_between_wrap(source, dest, candidate, grid_size=6):
+        if source == dest:
+            return candidate == source
 
-    if source.pos_y <= candidate.pos_y and candidate.pos_y <= destination.pos_y:
-        y_valid = True
+        direct_dist = abs(dest - source)
+        if direct_dist <= grid_size / 2:
+            return min(source, dest) <= candidate <= max(source, dest)
+        else:
+            return candidate >= max(source, dest) or candidate <= min(source, dest)
 
-    return x_valid and y_valid
+    return is_between_wrap(s_x, d_x, c_x) and is_between_wrap(s_y, d_y, c_y)
 
 def construct_backlog(topology, node, hop_table):
     topology_size = len(topology.nodes)
@@ -103,16 +107,21 @@ def get_next_dhbp_hop(packet, packet_location, topology):
 
     neighbors = find_neighbors(topology, packet_location)
     # Propagation will only be allowed within a region
+    print("Neighbors: ", neighbors)
     omega = []
     for n in neighbors:
         if is_in_region(packet, n):
             candidate_backlog = construct_backlog(topology, n, hop_table)
+<<<<<<< Updated upstream
            # # print()
            # # print("candidate backlog:", candidate_backlog)
            # # print()
+=======
+>>>>>>> Stashed changes
             # Equation 15
             heapq.heappush(omega, (backlog[packet_location.id][packet.destination.id] - 
                          candidate_backlog[n.id][packet.destination.id], n))
+            print("Length of heap: ", omega)
      
     # Not necessary, but including it for detail
     backlog[packet_location.id][packet.destination.id] -= destination_hops_delay
