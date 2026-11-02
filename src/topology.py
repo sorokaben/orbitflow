@@ -7,7 +7,7 @@ class Topology():
         self.nodes = {}
         self.grid = [[None for x in range(6)] for y in range(6)] # Create a 6x6 2d array
 
-        self.max_buffer_size = 100 # Default 100. Change this to 50 when testing with CBR like the paper does.
+        self.max_buffer_size = 50 # Default 100. Change this to 50 when testing with CBR like the paper does.
 
         self.build_topology(env)
         self.link_nodes()
@@ -27,7 +27,7 @@ class Topology():
     def build_topology(self, env):
         # Creates the 6x6 36-node topology
         count = 0
-        print("Creating topology: ")
+        #print("Creating topology: ")
         for y in range(6):
             for x in range(6):
                 node = Node(count, x, y, self.max_buffer_size, env)
@@ -40,11 +40,11 @@ class Topology():
 
                 # Print out topology
                 gap = "  " if count < 10 else " "
-                print(f"[{self.nodes[count]}]", end=gap)
+                #print(f"[{self.nodes[count]}]", end=gap)
                 count += 1
 
 
-            print()
+            #print()
 
     def link_nodes(self):
         # Creates link objects between each node, including wrap-around behavior

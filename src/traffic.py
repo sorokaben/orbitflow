@@ -6,13 +6,19 @@ PACKET_SIZE = 512
 packet_id = 0
 
 def inject_packet(env, packet, node):
+        env.metrics["packets_created"] += 1
+        env.metrics["packets_in_network"] += 1
+
         if len(node.buffer.items) < node.buffer.capacity:
+            # print(f"{len(node.buffer.items)} items in node {node.id}'s buffer")
             yield node.buffer.put(packet)
+            if len(node.buffer.items) > node.peak_buffer:
+                node.peak_buffer = len(node.buffer.items)
             #print("Put packet")
-            env.metrics["packets_created"] += 1
         else:
-            print(f"[{env.now:.3}] DROP: Packet {packet.id}. Dropped at Node {node.id}. Reason: Buffer Full")
+            #print(f"[{env.now:.3}] DROP: Packet {packet.id}. Dropped at Node {node.id}. Reason: Buffer Full with {len(node.buffer.items)}items")
             env.metrics["packets_dropped_source"] += 1
+            env.metrics["packets_in_network"] -= 1
 
 
 def generate_bursty(rate_mbps, env, source, destination):
@@ -20,15 +26,14 @@ def generate_bursty(rate_mbps, env, source, destination):
     state = "NORMAL"
     global packet_id
 
-
     while True: #Continues until main program stops environment
 
         # Set traffic rate based on current state
         if state == "NORMAL":
-            current_rate = rate_mbps # Same as CBR
+            current_rate = 2.0 # Standard CBR traffic load
         elif state == "BURSTY":
             # Get a random float between 3 and 11. All numbers have equal probability
-            current_rate = random.uniform(3,11)
+            current_rate = rate_mbps
 
         interval = cbr_interval(current_rate)
 
@@ -92,13 +97,13 @@ def generate_cbr(rate_mbps, env, source, destination):
 
 def generate_traffic(traffic_type, rate_mbps, env, source, destination):
     if traffic_type == "cbr":
-        print(f"Starting CBR traffic from {source.id} to {destination.id}")
+        #print(f"Starting CBR traffic from {source.id} to {destination.id}")
         env.process(generate_cbr(rate_mbps,env,source,destination))
     elif traffic_type == "poisson":
-        print(f"Starting Poisson traffic from {source.id} to {destination.id}")
+        #print(f"Starting Poisson traffic from {source.id} to {destination.id}")
         env.process(generate_poisson(rate_mbps,env,source,destination))
     elif traffic_type == "bursty":
-        print(f"Starting Bursty traffic from {source.id} to {destination.id}")
+        #print(f"Starting Bursty traffic from {source.id} to {destination.id}")
         env.process(generate_bursty(rate_mbps,env,source,destination))
     else:
         print("Error in traffic type")

@@ -17,6 +17,8 @@ class Node:
         self.buffer = simpy.Store(env, capacity=max_buffer_size)
         self.links = set()
         self.destination_cost = 0
+        self.peak_buffer = 0
+        
 
     def __str__(self):
         # Allows you to print() the node

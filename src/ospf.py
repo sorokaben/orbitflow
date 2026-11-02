@@ -3,6 +3,9 @@ from src.topology import *
 from src.objects import *
 import heapq
 import time
+
+dijkstra_cache = {}
+
 def find_neighbors(topology, starting_node):
     up = (starting_node.pos_y - 1) if starting_node.pos_y > 0 else 5
     down = (starting_node.pos_y + 1) if starting_node.pos_y < 5 else 0
@@ -84,8 +87,11 @@ def build_routing_table(topology):
     pass
 
 def get_next_ospf_hop(packet, packet_location, topology):
+    if packet_location.id not in dijkstra_cache:
+        dijkstra_cache[packet_location.id] = dijkstra(topology,packet_location)
+
     # Returns next hop (a Node object)
-    routing_table, distance = dijkstra(topology, packet_location)
+    routing_table, distance = dijkstra_cache[packet_location.id]
 
     source = packet.source
     destination = packet.destination
@@ -106,4 +112,6 @@ def get_next_ospf_hop(packet, packet_location, topology):
     #print("distance: ", distance)
     return candidate
 
+def clear_ospf_cache():
+    dijkstra_cache.clear()
  

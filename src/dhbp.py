@@ -11,6 +11,8 @@ from collections import deque
 # Also, we are assuming that hops take little to no time to calculate (based on the paper)
 # The hop table will represent this as a search-up time
 
+dhbp_cache = {}
+
 def find_neighbors(topology, starting_node):
     up = (starting_node.pos_y - 1) if starting_node.pos_y > 0 else 5
     down = (starting_node.pos_y + 1) if starting_node.pos_y < 5 else 0
@@ -81,7 +83,11 @@ def construct_backlog(topology, node, hop_table):
 def get_next_dhbp_hop(packet, packet_location, topology):
     # Returns next hop (a Node object)
     topology_size = len(topology.nodes)
-    hop_table = build_hop_table(topology)
+
+    if 'table' not in dhbp_cache: # Save table instead of rebuilding each time
+        dhbp_cache['table'] = build_hop_table(topology)
+
+    hop_table = dhbp_cache['table']
     destination_hops_delay = hop_table[packet_location.id][packet.destination.id]
     # ------------------------- Then we need to enqueue packet here ? ----------------------------
 
@@ -132,3 +138,6 @@ def rudimentary_test(packet, packet_location, topology: Topology):
     # random_link = random.choice(list(packet_location.links.get_partner()))
     ## print("Hi test")
     pass
+
+def clear_dhbp_cache():
+    dhbp_cache.clear()
