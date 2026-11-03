@@ -37,7 +37,7 @@ def run_experiments():
         for algorithm in algorithms:
             for traffic_type in traffic_types:
                 print(f"Starting simulation on {algorithm} with {traffic_type} traffic at {rate}mbps")
-
+                
                 if traffic_type == "bursty":
                     current_test_rate = bursty_ceilings[i]
                 else:
@@ -76,36 +76,40 @@ def plot_metrics(results, traffic_type):
     figure, axis = plt.subplots(2,2, figsize=(12,10))
 
     # (a) Average Delay
-    axis[0,0].plot(ospf["Rate (Mbps)"], ospf["Average Delay (s)"], label="OSPF", marker='o')
-    axis[0,0].plot(dhbp["Rate (Mbps)"], dhbp["Average Delay (s)"], label="DHBP", marker='s')
+    axis[0,0].plot(ospf["Rate (Mbps)"], ospf["Average Delay (s)"], label="OSPF", marker='o', linestyle='--')
+    axis[0,0].plot(dhbp["Rate (Mbps)"], dhbp["Average Delay (s)"], label="DHBP", marker='s', linestyle='-', mfc='none', linewidth=1.5, alpha=0.8)
     axis[0,0].set_title("(a) Average Delay")
     axis[0,0].set_xlabel(x_label)
     axis[0,0].set_ylabel("Delay (s)")
     axis[0,0].legend()
-
+    if traffic_type == "cbr":
+            axis[0,0].set_ylim(0.0435,0.0455)
     # (b) Average Forwarding Count
-    axis[0,1].plot(ospf["Rate (Mbps)"], ospf["Average Hops"], label="OSPF", marker='o')
-    axis[0,1].plot(dhbp["Rate (Mbps)"], dhbp["Average Hops"], label="DHBP", marker='s')
+    axis[0,1].plot(ospf["Rate (Mbps)"], ospf["Average Hops"], label="OSPF", marker='o', linestyle='--')
+    axis[0,1].plot(dhbp["Rate (Mbps)"], dhbp["Average Hops"], label="DHBP", marker='s', linestyle='-', mfc='none', linewidth=1.5, alpha=0.8)
     axis[0,1].set_title("(b) Average Forwarding Count")
     axis[0,1].set_xlabel(x_label)
     axis[0,1].set_ylabel("Hops")
+    if traffic_type == "cbr":
+        axis[0,1].set_ylim(5.98,6.02)
     axis[0,1].legend()
-
     # (c) Throughput
-    axis[1,0].plot(ospf["Rate (Mbps)"], ospf["Throughput (mbps)"], label="OSPF", marker='o')
-    axis[1,0].plot(dhbp["Rate (Mbps)"], dhbp["Throughput (mbps)"], label="DHBP", marker='s')
+    axis[1,0].plot(ospf["Rate (Mbps)"], ospf["Throughput (mbps)"], label="OSPF", marker='o', linestyle='--')
+    axis[1,0].plot(dhbp["Rate (Mbps)"], dhbp["Throughput (mbps)"], label="DHBP", marker='s', linestyle='-', mfc='none', linewidth=1.5, alpha=0.8)
     axis[1,0].set_title("(c) Throughput")
     axis[1,0].set_xlabel(x_label)
     axis[1,0].set_ylabel("Throughput (Mbps)")
     axis[1,0].legend()
 
     # (d) Delivery Ratio
-    axis[1,1].plot(ospf["Rate (Mbps)"], ospf["Data Delivery Ratio"], label="OSPF", marker='o')
-    axis[1,1].plot(dhbp["Rate (Mbps)"], dhbp["Data Delivery Ratio"], label="DHBP", marker='s')
+    axis[1,1].plot(ospf["Rate (Mbps)"], ospf["Data Delivery Ratio"], label="OSPF", marker='o', linestyle='--')
+    axis[1,1].plot(dhbp["Rate (Mbps)"], dhbp["Data Delivery Ratio"], label="DHBP", marker='s', linestyle='-', mfc='none', linewidth=1.5, alpha=0.8)
     axis[1,1].set_title("(d) Delivery Ratio")
     axis[1,1].set_xlabel(x_label)
     axis[1,1].set_ylabel("Ratio")
     axis[1,1].legend()
+    if traffic_type != "bursty":
+        axis[1,1].set_ylim(0.9985,1.0005)
 
     plt.tight_layout()
     plt.show()

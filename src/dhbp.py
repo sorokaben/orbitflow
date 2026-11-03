@@ -60,26 +60,32 @@ def is_in_region(packet, candidate):
     d_x, d_y = packet.destination.pos_x, packet.destination.pos_y
     c_x, c_y = candidate.pos_x, candidate.pos_y
 
-    # Checks to see if the candidate is near an edge to allow for wraparound
+    # Helper Function: Checks to see if the candidate is near an edge to allow for wraparound
     def is_between_wrap(source, dest, candidate, grid_size=6):
         if source == dest:
             return candidate == source
 
+        # This is the straight line distance
         direct_dist = abs(dest - source)
-        if direct_dist <= grid_size / 2:
-            return min(source, dest) <= candidate <= max(source, dest)
-        else:
-            return candidate >= max(source, dest) or candidate <= min(source, dest)
 
+        # If the distance is 3 or less, shortest path doesn't need wrapping
+        if direct_dist <= grid_size / 2: # Which direction  bounding box should be drawn
+            return min(source, dest) <= candidate <= max(source, dest)
+        else: # Otherwise, shortest path wraps around the edge
+            return candidate >= max(source, dest) or candidate <= min(source, dest)
+    # Valid candidate has to be within the shortest-path bounds for both X and Y
     return is_between_wrap(s_x, d_x, c_x) and is_between_wrap(s_y, d_y, c_y)
 
 def construct_backlog(topology, node, hop_table):
-    topology_size = len(topology.nodes)
-    backlog = [[0 for _ in range(topology_size)] for _ in range(topology_size)]
-    backlog_sum = 0
+    # Create blank dictionary 
+    backlog = {}
 
-    for packet in node.buffer.items:
-        backlog[packet.location.id][packet.destination.id] += hop_table[packet.location.id][packet.destination.id]
+    for packet in node.buffer.items: #If node has packet headed to destination node:
+        dest_id = packet.destination.id 
+        # Add hop penalty to destination's running total
+        # .get(dest_id, 0) typically has a default of 0 if dest isnt in backlog 
+        # .get is what was recommended online, since it looks up keys without crashing if the key doesn't exist
+        backlog[dest_id] = backlog.get(dest_id, 0) + hop_table[node.id][dest_id]
 
     return backlog
 
@@ -88,6 +94,7 @@ def get_next_dhbp_hop(packet, packet_location, topology):
     # Returns next hop (a Node object)
     topology_size = len(topology.nodes)
 
+    # Cache table, this lets us only calculate grid's distance once
     if 'table' not in dhbp_cache: # Save table instead of rebuilding each time
         dhbp_cache['table'] = build_hop_table(topology)
 
@@ -95,53 +102,40 @@ def get_next_dhbp_hop(packet, packet_location, topology):
     destination_hops_delay = hop_table[packet_location.id][packet.destination.id]
     # ------------------------- Then we need to enqueue packet here ? ----------------------------
 
-    backlog = [[0 for _ in range(topology_size)] for _ in range(topology_size)]
+    # Calculate current node's backlog weight regarding the current packet's dest
     backlog = construct_backlog(topology, packet_location, hop_table)
-    backlog[packet_location.id][packet.destination.id] += destination_hops_delay
+    weight = backlog.get(packet.destination.id, 0) + destination_hops_delay
 
     # When packet is dequeued: we decide the next hop
-    # print(hop_table[2][21])
-    # print(hop_table[3][21])
-    # print(hop_table[9][21])
-    #time.sleep(10000)
 
     neighbors = find_neighbors(topology, packet_location)
     # Propagation will only be allowed within a region
-    print("Neighbors: ", neighbors)
+    # print("Neighbors: ", neighbors)
     omega = []
     for n in neighbors:
         if is_in_region(packet, n):
+            # Calculate hypothetical backlog weight for this region
             candidate_backlog = construct_backlog(topology, n, hop_table)
-<<<<<<< Updated upstream
-           # # print()
-           # # print("candidate backlog:", candidate_backlog)
-           # # print()
-=======
->>>>>>> Stashed changes
+            candidate_weight = candidate_backlog.get(packet.destination.id, 0)
+
+            # w is the pressure difference
+            w = weight - candidate_weight
+            hops_to_dest = hop_table[n.id][packet.destination.id]
             # Equation 15
-            heapq.heappush(omega, (backlog[packet_location.id][packet.destination.id] - 
-                         candidate_backlog[n.id][packet.destination.id], n))
-            print("Length of heap: ", omega)
-     
-    # Not necessary, but including it for detail
-    backlog[packet_location.id][packet.destination.id] -= destination_hops_delay
+            # Heapq always pops smallest value, thus we need to do -w to look for biggest pressure difference
+            # Then hops_to_dest breaks ties and chooses the shorest path
+            # n also breaks ties without having to do weird node comparisons
+            heapq.heappush(omega, (-w, hops_to_dest, n.id, n))
 
-    # print(omega)
-    weight1, candidate1 = heapq.heappop(omega)
-    weight2, candidate2 = heapq.heappop(omega)
-    true_candidate = candidate2
-    # print("Candidate1: ", candidate1)
-    # print("Candidate2: ", candidate2)
+    # Incase the bounding box blocks everything, don't move
+    if not omega:
+        return packet_location
 
+    # Gets the best candidate 
+    best_weight, best_hops, best_id, true_candidate = heapq.heappop(omega)
 
-    # print("Hops for each Candidate: ", hop_table[candidate1.id][packet.destination.id], hop_table[candidate2.id][packet.destination.id])
-    if weight1 == weight2:
-        if hop_table[candidate1.id][packet.destination.id] < hop_table[candidate2.id][packet.destination.id]:
-            true_candidate = candidate1
-        
-
-    # print("Sending to node: ", true_candidate)
     return true_candidate
+
 
 def rudimentary_test(packet, packet_location, topology: Topology):
     # random_link = random.choice(list(packet_location.links.get_partner()))
